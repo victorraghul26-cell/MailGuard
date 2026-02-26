@@ -18,6 +18,10 @@ function injectButton() {
     btn.style.cursor = "pointer";
     btn.style.zIndex = "9999";
     btn.style.boxShadow = "0 8px 20px rgba(0,0,0,0.3)";
+    btn.style.transition = "0.3s";
+
+    btn.onmouseenter = () => btn.style.transform = "scale(1.05)";
+    btn.onmouseleave = () => btn.style.transform = "scale(1)";
 
     btn.onclick = analyzeEmail;
     document.body.appendChild(btn);
@@ -27,7 +31,9 @@ function extractEmail() {
 
     let sender = document.querySelector("span[email]");
     let subject = document.querySelector("h2.hP");
-    let body = document.querySelector("div.a3s");
+
+    let body = document.querySelector("div.a3s.aiL");
+    if (!body) body = document.querySelector("div.a3s");
 
     if (!body) {
         alert("Open an email first.");
@@ -52,23 +58,41 @@ function analyzeEmail() {
     let email = extractEmail();
     if (!email) return;
 
+    let btn = document.getElementById("analyzeBtn");
+    btn.innerText = "Analyzing...";
+    btn.disabled = true;
+    btn.style.opacity = "0.7";
+
     fetch("http://127.0.0.1:8000/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(email)
     })
     .then(res => res.json())
-    .then(data => showOverlay(data))
-    .catch(() => alert("Backend not running!"));
+    .then(data => {
+        btn.innerText = "Analyze Email";
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        showOverlay(data);
+    })
+    .catch(() => {
+        btn.innerText = "Analyze Email";
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        alert("Backend not running!");
+    });
 }
 
 function showOverlay(data) {
+
+    if (document.getElementById("mailguardOverlay")) return;
 
     let glowColor = "#10b981";
     if (data.risk_level === "Medium") glowColor = "#f59e0b";
     if (data.risk_level === "High") glowColor = "#ef4444";
 
     let overlay = document.createElement("div");
+    overlay.id = "mailguardOverlay";
     overlay.style.position = "fixed";
     overlay.style.inset = "0";
     overlay.style.background = "rgba(0,0,0,0.8)";
@@ -80,23 +104,25 @@ function showOverlay(data) {
     let card = document.createElement("div");
     card.style.background = "#0f172a";
     card.style.color = "white";
-    card.style.width = "650px";
+    card.style.width = "620px";
     card.style.maxHeight = "90vh";
     card.style.overflowY = "auto";
-    card.style.padding = "30px";
-    card.style.borderRadius = "20px";
+    card.style.padding = "28px";
+    card.style.borderRadius = "18px";
     card.style.fontFamily = "Arial";
     card.style.boxShadow = `0 0 40px ${glowColor}`;
+    card.style.fontSize = "14px";
 
     card.innerHTML = `
-        <h2>Harm Likelihood</h2>
-        <div id="scoreText" style="font-size:48px;font-weight:bold;">0 / 100</div>
+        <h2 style="margin-bottom:10px;">Harm Likelihood</h2>
 
-        <div style="height:12px;background:#1e293b;border-radius:10px;margin:10px 0 20px 0;">
-            <div id="mainBar" style="height:12px;width:0%;background:${glowColor};border-radius:10px;transition:width 1s;"></div>
+        <div id="scoreText" style="font-size:44px;font-weight:bold;">0 / 100</div>
+
+        <div style="height:10px;background:#1e293b;border-radius:10px;margin:10px 0 20px 0;">
+            <div id="mainBar" style="height:10px;width:0%;background:${glowColor};border-radius:10px;transition:width 1s;"></div>
         </div>
 
-        <div style="margin-bottom:20px;font-weight:bold;">
+        <div style="margin-bottom:18px;font-weight:bold;">
             ${data.risk_level} Risk | Confidence: ${data.confidence}
         </div>
 
@@ -105,36 +131,36 @@ function showOverlay(data) {
         <p>Technical Score: ${data.technical_score}</p>
         <p>Trust Deduction: ${data.trust_score}</p>
 
-        <h3 style="margin-top:25px;">Psychological Tactics</h3>
-        <ul>${data.psychological_tactics.map(s => `<li>🧠 ${s}</li>`).join("")}</ul>
+        <h3 style="margin-top:20px;">Psychological Tactics</h3>
+        <ul>${(data.psychological_tactics || []).map(s => `<li>🧠 ${s}</li>`).join("")}</ul>
 
-        <h3 style="margin-top:20px;">Technical Flags</h3>
-        <ul>${data.technical_flags.map(s => `<li>⚙ ${s}</li>`).join("")}</ul>
+        <h3 style="margin-top:18px;">Technical Flags</h3>
+        <ul>${(data.technical_flags || []).map(s => `<li>⚙ ${s}</li>`).join("")}</ul>
 
-        <h3 style="margin-top:20px;">Trust Signals</h3>
-        <ul>${data.trust_signals.map(s => `<li>✔ ${s}</li>`).join("")}</ul>
+        <h3 style="margin-top:18px;">Trust Signals</h3>
+        <ul>${(data.trust_signals || []).map(s => `<li>✔ ${s}</li>`).join("")}</ul>
 
-        <h3 style="margin-top:25px;">Attack Type Classification</h3>
+        <h3 style="margin-top:20px;">Attack Type Classification</h3>
         <p>${data.attack_type}</p>
 
-        <h3 style="margin-top:25px;">AI Intent Explanation</h3>
+        <h3 style="margin-top:20px;">AI Intent Explanation</h3>
         <p>${data.ai_explanation}</p>
 
-        <h3 style="margin-top:25px;">Why Not 100?</h3>
-        <ul>${data.why_not_100.map(s => `<li>${s}</li>`).join("")}</ul>
+        <h3 style="margin-top:20px;">Why Not 100?</h3>
+        <ul>${(data.why_not_100 || []).map(s => `<li>${s}</li>`).join("")}</ul>
 
-        <h3 style="margin-top:25px;">Why Gmail May Not Block This</h3>
+        <h3 style="margin-top:20px;">Why Gmail May Not Block This</h3>
         <p>${data.gmail_bypass_reason}</p>
 
-        <h3 style="margin-top:25px;">Educational Insight</h3>
+        <h3 style="margin-top:20px;">Educational Insight</h3>
         <p>${data.educational_tip}</p>
 
-        <div style="margin-top:25px;padding:15px;border-radius:12px;background:rgba(239,68,68,0.15);color:${glowColor};font-weight:bold;">
+        <div style="margin-top:22px;padding:14px;border-radius:12px;background:rgba(239,68,68,0.15);color:${glowColor};font-weight:bold;">
             Recommended Action: ${data.recommended_action}
         </div>
 
         <button id="closeOverlay"
-            style="margin-top:30px;width:100%;padding:15px;border:none;border-radius:12px;background:#334155;color:white;font-size:16px;cursor:pointer;">
+            style="margin-top:25px;width:100%;padding:14px;border:none;border-radius:12px;background:#334155;color:white;font-size:15px;cursor:pointer;">
             Close
         </button>
     `;
