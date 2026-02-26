@@ -7,7 +7,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://mail.google.com"],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -102,7 +102,7 @@ def analyze(data: dict):
         psychological_score += intent_count * 15
         psychological_tactics.append("Credential Harvesting Intent")
 
-    # ---------- Technical ----------
+        # ---------- Technical ----------
 
     sender_domain = sender.split("@")[-1] if "@" in sender else ""
     link_domains = extract_domains(links)
@@ -119,7 +119,8 @@ def analyze(data: dict):
         technical_score += 6
         technical_flags.append("Multiple Embedded Links")
 
-    if link_contains_pattern(links, LOGIN_PATTERNS):
+    login_detected = link_contains_pattern(links, LOGIN_PATTERNS)
+    if login_detected:
         technical_score += 20
         technical_flags.append("Login-Style Link Detected")
 
@@ -213,6 +214,4 @@ def analyze(data: dict):
         "educational_tip": educational_tip,
         "recommended_action": recommended_action
     }
-@app.get("/")
-def health():
-    return {"status": "MailGuard API running"}
+    
