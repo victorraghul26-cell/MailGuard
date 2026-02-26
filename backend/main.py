@@ -7,7 +7,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://mail.google.com"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -213,3 +213,6 @@ def analyze(data: dict):
         "educational_tip": educational_tip,
         "recommended_action": recommended_action
     }
+@app.get("/")
+def health():
+    return {"status": "MailGuard API running"}
